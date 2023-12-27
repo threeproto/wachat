@@ -9,14 +9,13 @@ import { EventsOff, EventsOn } from "../wailsjs/runtime/runtime";
 import logo from "./assets/images/logo-universal.png";
 
 function App() {
-  const [resultText, setResultText] = useState(
+  const [newMessageHash, setNewMessageHash] = useState(
     "Please enter your message below 👇"
   );
-  const [name, setName] = useState("");
+  const [newMessage, setNewMessage] = useState("");
   const [messages, setMessages] = useState<main.Message[]>([]);
 
-  const updateName = (e: any) => setName(e.target.value);
-  const updateResultText = (result: string) => setResultText(result);
+  const updateMessage = (e: any) => setNewMessage(e.target.value);
 
   useEffect(() => {
     console.log("in init effect");
@@ -26,19 +25,31 @@ function App() {
     return () => EventsOff("newMessage");
   }, []);
 
-  function sendMessage() {
-    Send(name).then(updateResultText);
-  }
+  const sendMessage = async () => {
+    let result = await Send(newMessage);
+    setNewMessageHash(result);
+    setNewMessage("");
+  };
+
+  const formatDate = (timestamp: number) => {
+    const date = new Date(timestamp * 1000);
+    return date.toLocaleString();
+  };
 
   return (
     <div className="flex flex-col gap-4 items-center">
       <img height={100} width={100} src={logo} alt="logo" />
       <div className="flex flex-row gap-3">
         <Label className="font-bold">Message Hash: </Label>
-        <Label>{resultText}</Label>
+        <Label>{newMessageHash}</Label>
       </div>
       <div className="flex w-full max-w-sm items-center space-x-2">
-        <Input onChange={updateName} autoComplete="off" autoCorrect="off" />
+        <Input
+          value={newMessage}
+          onChange={updateMessage}
+          autoComplete="off"
+          autoCorrect="off"
+        />
         <Button className="" onClick={sendMessage}>
           Send
         </Button>
@@ -49,7 +60,7 @@ function App() {
         <ul className="text-sm">
           {messages.map((msg, index) => (
             <li key={index} className="mb-1">
-              {msg.timestamp} {msg.name} says: {msg.content}
+              [{formatDate(msg.timestamp)} {msg.name}] says: {msg.content}
             </li>
           ))}
         </ul>
