@@ -21,9 +21,7 @@ function App() {
   useEffect(() => {
     console.log("in init effect");
     EventsOn("newMessage", (msg: main.Message) => {
-      console.log("new message:", msg);
-      messages.push(msg);
-      console.log("after messages:", messages);
+      setMessages((prev) => [...prev, msg]);
     });
     return () => EventsOff("newMessage");
   }, []);
