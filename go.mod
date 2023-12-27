@@ -4,6 +4,7 @@ go 1.20
 
 require (
 	github.com/ethereum/go-ethereum v1.10.26
+	github.com/libp2p/go-libp2p v0.29.2
 	github.com/wailsapp/wails/v2 v2.5.1
 	github.com/waku-org/go-waku v0.8.1-0.20231221004451-b4ba7b75d402
 	google.golang.org/protobuf v1.31.0
@@ -63,7 +64,6 @@ require (
 	github.com/libp2p/go-buffer-pool v0.1.0 // indirect
 	github.com/libp2p/go-cidranger v1.1.0 // indirect
 	github.com/libp2p/go-flow-metrics v0.1.0 // indirect
-	github.com/libp2p/go-libp2p v0.29.2 // indirect
 	github.com/libp2p/go-libp2p-asn-util v0.3.0 // indirect
 	github.com/libp2p/go-libp2p-pubsub v0.9.3 // indirect
 	github.com/libp2p/go-mplex v0.7.0 // indirect
