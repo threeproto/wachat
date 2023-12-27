@@ -4,15 +4,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useEffect, useState } from "react";
-import { Send } from "../wailsjs/go/main/App";
+import { CreateUser, Send } from "../wailsjs/go/main/App";
 import { EventsOff, EventsOn } from "../wailsjs/runtime/runtime";
 import logo from "./assets/images/logo-universal.png";
+import { toast } from "sonner";
 
 function App() {
   const [newMessageHash, setNewMessageHash] = useState(
     "Please enter your message below 👇"
   );
   const [newMessage, setNewMessage] = useState("");
+  const [username, setUsername] = useState("");
   const [messages, setMessages] = useState<main.Message[]>([]);
 
   const updateMessage = (e: any) => setNewMessage(e.target.value);
@@ -26,9 +28,18 @@ function App() {
   }, []);
 
   const sendMessage = async () => {
+    if (!username || !newMessage) {
+      toast.warning("Username or message is empty.");
+      return;
+    }
     let result = await Send(newMessage);
     setNewMessageHash(result);
     setNewMessage("");
+  };
+
+  const createUser = async () => {
+    await CreateUser(username);
+    toast("User has been created.");
   };
 
   const formatDate = (timestamp: number) => {
@@ -39,18 +50,34 @@ function App() {
   return (
     <div className="flex flex-col gap-4 items-center">
       <img height={100} width={100} src={logo} alt="logo" />
+
       <div className="flex flex-row gap-3">
         <Label className="font-bold">Message Hash: </Label>
         <Label>{newMessageHash}</Label>
       </div>
+
+      <div className="flex w-full max-w-sm items-center space-x-2">
+        <Input
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          placeholder="Enter your username"
+          autoComplete="off"
+          autoCorrect="off"
+        />
+        <Button className="w-32" onClick={createUser}>
+          Create
+        </Button>
+      </div>
+
       <div className="flex w-full max-w-sm items-center space-x-2">
         <Input
           value={newMessage}
           onChange={updateMessage}
+          placeholder="Input your message"
           autoComplete="off"
           autoCorrect="off"
         />
-        <Button className="" onClick={sendMessage}>
+        <Button className="w-32" onClick={sendMessage}>
           Send
         </Button>
       </div>

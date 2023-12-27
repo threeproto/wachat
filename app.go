@@ -27,9 +27,10 @@ import (
 
 // App struct
 type App struct {
-	ctx   context.Context
-	node  *node.WakuNode
-	topic protocol.ContentTopic
+	ctx      context.Context
+	node     *node.WakuNode
+	topic    protocol.ContentTopic
+	username string
 }
 
 type Message struct {
@@ -98,7 +99,7 @@ func (a *App) Send(message string) (string, error) {
 	wakuPayload := new(payload.Payload)
 	pbMessage := &pb.Chat2Message{
 		Timestamp: uint64(a.node.Timesource().Now().Unix()),
-		Nick:      "wachat",
+		Nick:      a.username,
 		Payload:   []byte(message),
 	}
 	pbMsgBytes, err := proto.Marshal(pbMessage)
@@ -128,6 +129,11 @@ func (a *App) Send(message string) (string, error) {
 	}
 
 	return hexutil.Encode(msgHash), nil
+}
+
+func (a *App) CreateUser(name string) error {
+	a.username = name
+	return nil
 }
 
 func (a *App) GetMessages() []Message {
