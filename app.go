@@ -27,6 +27,11 @@ type App struct {
 	topic protocol.ContentTopic
 }
 
+type Message struct {
+	Hash    string `json:"hash"`
+	Content string `json:"content"`
+}
+
 // NewApp creates a new App application struct
 func NewApp() *App {
 	return &App{}
@@ -126,7 +131,11 @@ func (a *App) readMessages() {
 		}
 
 		fmt.Println("Received message: ", string(msgPayload.Data))
-		runtime.EventsEmit(a.ctx, "newMessage", string(msgPayload.Data))
+		msg := Message{
+			Hash:    hexutil.Encode(envelope.Hash()),
+			Content: string(msgPayload.Data),
+		}
+		runtime.EventsEmit(a.ctx, "newMessage", msg)
 	}
 }
 
