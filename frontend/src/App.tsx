@@ -4,6 +4,7 @@ import { Send } from "../wailsjs/go/main/App";
 import { EventsOn } from "../wailsjs/runtime/runtime";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface Message {
@@ -13,7 +14,7 @@ interface Message {
 
 function App() {
   const [resultText, setResultText] = useState(
-    "Please enter your name below 👇"
+    "Please enter your message below 👇"
   );
   const [name, setName] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
@@ -38,7 +39,10 @@ function App() {
   return (
     <div className="flex flex-col gap-4 items-center">
       <img height={100} width={100} src={logo} alt="logo" />
-      <div className="">Message Hash: {resultText}</div>
+      <div className="flex flex-row gap-3">
+        <Label className="font-bold">Message Hash: </Label>
+        <Label>{resultText}</Label>
+      </div>
       <div className="flex w-full max-w-sm items-center space-x-2">
         <Input onChange={updateName} autoComplete="off" autoCorrect="off" />
         <Button className="" onClick={sendMessage}>
