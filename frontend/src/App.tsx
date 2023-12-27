@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import logo from "./assets/images/logo-universal.png";
-import "./App.css";
 import { Send } from "../wailsjs/go/main/App";
 import { EventsOn } from "../wailsjs/runtime/runtime";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 function App() {
   const [resultText, setResultText] = useState(
@@ -28,23 +29,16 @@ function App() {
   }
 
   return (
-    <div id="App">
-      <img src={logo} id="logo" alt="logo" />
-      <div id="result" className="result">
-        {resultText}
+    <div className="flex flex-col gap-2 items-center">
+      <img height={100} width={100} src={logo} alt="logo" />
+      <div className="">
+        Message Hash: {resultText}
       </div>
-      <div id="input" className="input-box">
-        <input
-          id="name"
-          className="input"
-          onChange={updateName}
-          autoComplete="off"
-          name="input"
-          type="text"
-        />
-        <button className="btn" onClick={sendMessage}>
-          Greet
-        </button>
+      <div className="flex w-full max-w-sm items-center space-x-2">
+        <Input onChange={updateName} autoComplete="off" autoCorrect="off" />
+        <Button className="" onClick={sendMessage}>
+          Send
+        </Button>
       </div>
     </div>
   );
