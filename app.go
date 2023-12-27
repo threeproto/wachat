@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"github.com/waku-org/go-waku/waku/v2/node"
 	"github.com/waku-org/go-waku/waku/v2/payload"
 	"github.com/waku-org/go-waku/waku/v2/protocol"
@@ -69,6 +70,12 @@ func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 	a.node = wakuNode
 	a.topic = contentTopic
+
+	go a.readMessages()
+}
+
+func (a *App) shutdown(ctx context.Context) {
+	a.node.Stop()
 }
 
 // Greet returns a greeting for the given name
@@ -98,6 +105,29 @@ func (a *App) Send(message string) (string, error) {
 	}
 
 	return hexutil.Encode(msgHash), nil
+}
+
+func (a *App) readMessages() {
+	sub, err := a.node.Relay().Subscribe(a.ctx, protocol.NewContentFilter(relay.DefaultWakuTopic))
+	if err != nil {
+		log.Error("Error subscribing to the default waku topic", err)
+		return
+	}
+
+	for envelope := range sub[0].Ch {
+		if envelope.Message().ContentTopic != a.topic.String() {
+			continue
+		}
+
+		msgPayload, err := payload.DecodePayload(envelope.Message(), &payload.KeyInfo{Kind: payload.None})
+		if err != nil {
+			log.Error("Error decoding the payload", err)
+			continue
+		}
+
+		fmt.Println("Received message: ", string(msgPayload.Data))
+		runtime.EventsEmit(a.ctx, "newMessage", string(msgPayload.Data))
+	}
 }
 
 func randomHex(n int) (string, error) {
