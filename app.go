@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"net"
+	"net/http"
 	"sync"
 	"time"
 	"wachat/pb"
@@ -13,12 +14,14 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/jpillora/overseer"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"github.com/waku-org/go-waku/waku/v2/dnsdisc"
 	"github.com/waku-org/go-waku/waku/v2/node"
 	"github.com/waku-org/go-waku/waku/v2/payload"
 	"github.com/waku-org/go-waku/waku/v2/protocol"
+	"github.com/waku-org/go-waku/waku/v2/protocol/lightpush"
 	wpb "github.com/waku-org/go-waku/waku/v2/protocol/pb"
 	"github.com/waku-org/go-waku/waku/v2/protocol/relay"
 	"github.com/waku-org/go-waku/waku/v2/utils"
@@ -31,6 +34,7 @@ type App struct {
 	node     *node.WakuNode
 	topic    protocol.ContentTopic
 	username string
+	isOnline bool
 }
 
 type Message struct {
@@ -48,7 +52,7 @@ func NewApp() *App {
 // startup is called when the app starts. The context is saved
 // so we can call the runtime methods
 func (a *App) startup(ctx context.Context) {
-	contentTopic, err := protocol.NewContentTopic("toy-chat", "3", "mingde", "proto")
+	contentTopic, err := protocol.NewContentTopic("toy-chat", "2", "huilong", "proto")
 	if err != nil {
 		fmt.Println("Invalid Content Topic")
 		panic(err)
@@ -69,6 +73,7 @@ func (a *App) startup(ctx context.Context) {
 		node.WithHostAddress(hostAddr),
 		node.WithNTP(),
 		node.WithWakuRelay(),
+		node.WithWakuRelayAndMinPeers(1),
 	)
 	if err != nil {
 		fmt.Println("Could not create waku node")
@@ -83,9 +88,25 @@ func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 	a.node = wakuNode
 	a.topic = contentTopic
+	a.isOnline = a.isNetworkOnline()
 
 	go a.readMessages()
 	go a.discoverNodes()
+	go func() {
+		for {
+			time.Sleep(5 * time.Second)
+			currentStatus := a.isNetworkOnline()
+			if a.isOnline != currentStatus {
+				fmt.Println("Network is online", a.isOnline, currentStatus)
+				a.isOnline = currentStatus
+				runtime.EventsEmit(a.ctx, "isOnline", currentStatus)
+				if currentStatus {
+					fmt.Println("Network is online")
+					overseer.Restart()
+				}
+			}
+		}
+	}()
 }
 
 func (a *App) shutdown(ctx context.Context) {
@@ -122,13 +143,32 @@ func (a *App) Send(message string) (string, error) {
 		Timestamp:    utils.GetUnixEpoch(a.node.Timesource()),
 	}
 
-	msgHash, err := a.node.Relay().Publish(a.ctx, msg, relay.WithDefaultPubsubTopic())
+	msgHash, err := a.node.Lightpush().Publish(a.ctx, msg, lightpush.WithDefaultPubsubTopic())
 	if err != nil {
 		log.Error("Error push a message", err)
 		return "", err
 	}
 
 	return hexutil.Encode(msgHash), nil
+}
+
+const testServer = "http://www.google.com"
+
+func (a *App) isNetworkOnline() bool {
+	// Set a timeout for the HTTP request
+	online := true
+	client := http.Client{
+		Timeout: 5 * time.Second,
+	}
+
+	// Attempt to perform a GET request to a known server
+	_, err := client.Get(testServer)
+	if err != nil {
+		fmt.Println("Error:", err)
+		online = false
+	}
+
+	return online
 }
 
 func (a *App) CreateUser(name string) error {

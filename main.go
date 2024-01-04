@@ -3,6 +3,7 @@ package main
 import (
 	"embed"
 
+	"github.com/jpillora/overseer"
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
@@ -12,6 +13,12 @@ import (
 var assets embed.FS
 
 func main() {
+	overseer.Run(overseer.Config{
+		Program: prog,
+	})
+}
+
+func prog(overseer.State) {
 	// Create an instance of the app structure
 	app := NewApp()
 

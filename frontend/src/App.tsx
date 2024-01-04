@@ -24,7 +24,17 @@ function App() {
     EventsOn("newMessage", (msg: main.Message) => {
       setMessages((prev) => [...prev, msg]);
     });
-    return () => EventsOff("newMessage");
+    EventsOn("isOnline", (isOnline: boolean) => {
+      if (isOnline) {
+        toast.success("You are online.");
+      } else {
+        toast.warning("You are offline.");
+      }
+    });
+    return () => {
+      EventsOff("newMessage");
+      EventsOff("isOnline");
+    };
   }, []);
 
   const sendMessage = async () => {
@@ -32,9 +42,13 @@ function App() {
       toast.warning("Username or message is empty.");
       return;
     }
-    let result = await Send(newMessage);
-    setNewMessageHash(result);
-    setNewMessage("");
+    try {
+      let result = await Send(newMessage);
+      setNewMessageHash(result);
+      setNewMessage("");
+    } catch (err) {
+      toast.error(`Error happens: ${err}`);
+    }
   };
 
   const createUser = async () => {
