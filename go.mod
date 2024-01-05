@@ -4,7 +4,6 @@ go 1.20
 
 require (
 	github.com/ethereum/go-ethereum v1.10.26
-	github.com/jpillora/overseer v1.1.6
 	github.com/libp2p/go-libp2p v0.29.2
 	github.com/wailsapp/wails/v2 v2.5.1
 	github.com/waku-org/go-waku v0.8.1-0.20231221004451-b4ba7b75d402
@@ -53,7 +52,6 @@ require (
 	github.com/jackpal/go-nat-pmp v1.0.2 // indirect
 	github.com/jbenet/go-temp-err-catcher v0.1.0 // indirect
 	github.com/jchv/go-winloader v0.0.0-20210711035445-715c2860da7e // indirect
-	github.com/jpillora/s3 v1.1.4 // indirect
 	github.com/klauspost/compress v1.16.7 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.5 // indirect
 	github.com/koron/go-ssdp v0.0.4 // indirect
