@@ -1,4 +1,4 @@
-import { main } from "@/../wailsjs/go/models";
+import { params } from "@/../wailsjs/go/models";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,13 +15,13 @@ function App() {
   );
   const [newMessage, setNewMessage] = useState("");
   const [username, setUsername] = useState("");
-  const [messages, setMessages] = useState<main.Message[]>([]);
+  const [messages, setMessages] = useState<params.Message[]>([]);
 
   const updateMessage = (e: any) => setNewMessage(e.target.value);
 
   useEffect(() => {
     console.log("in init effect");
-    EventsOn("newMessage", (msg: main.Message) => {
+    EventsOn("newMessage", (msg: params.Message) => {
       setMessages((prev) => [...prev, msg]);
     });
     EventsOn("isOnline", (isOnline: boolean) => {

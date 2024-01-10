@@ -9,11 +9,15 @@ import (
 	"net/http"
 	"sync"
 	"time"
+	"wachat/database"
+	"wachat/params"
 	"wachat/pb"
+	"wachat/utils"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/jmoiron/sqlx"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"github.com/waku-org/go-waku/waku/v2/dnsdisc"
@@ -22,7 +26,7 @@ import (
 	"github.com/waku-org/go-waku/waku/v2/protocol"
 	wpb "github.com/waku-org/go-waku/waku/v2/protocol/pb"
 	"github.com/waku-org/go-waku/waku/v2/protocol/relay"
-	"github.com/waku-org/go-waku/waku/v2/utils"
+	wakuutils "github.com/waku-org/go-waku/waku/v2/utils"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -33,13 +37,7 @@ type App struct {
 	topic    protocol.ContentTopic
 	username string
 	isOnline bool
-}
-
-type Message struct {
-	Hash      string `json:"hash"`
-	Content   string `json:"content"`
-	Name      string `json:"name"`
-	Timestamp uint64 `json:"timestamp"`
+	sqlite   *sqlx.DB
 }
 
 // NewApp creates a new App application struct
@@ -51,6 +49,19 @@ func NewApp() *App {
 // so we can call the runtime methods
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
+
+	DbMigrate()
+
+	sqlDbPath, err := utils.SQLiteDatabasePath()
+	if err != nil {
+		// utils.Sugar.Fatal(err)
+	}
+	sqlDb, err := sqlx.Connect("sqlite", sqlDbPath)
+	if err != nil {
+		// utils.Sugar.Fatal(err)
+	}
+	a.sqlite = sqlDb
+
 	a.isOnline = a.isNetworkOnline()
 	if a.isOnline {
 		a.startWaku(ctx)
@@ -146,7 +157,7 @@ func (a *App) Send(message string) (string, error) {
 		Payload:      payloadBytes,
 		Version:      proto.Uint32(version),
 		ContentTopic: a.topic.String(),
-		Timestamp:    utils.GetUnixEpoch(a.node.Timesource()),
+		Timestamp:    wakuutils.GetUnixEpoch(a.node.Timesource()),
 	}
 
 	msgHash, err := a.node.Relay().Publish(a.ctx, msg, relay.WithDefaultPubsubTopic())
@@ -182,8 +193,8 @@ func (a *App) CreateUser(name string) error {
 	return nil
 }
 
-func (a *App) GetMessages() []Message {
-	return []Message{}
+func (a *App) GetMessages() []params.Message {
+	return []params.Message{}
 }
 
 func (a *App) readMessages() {
@@ -212,11 +223,15 @@ func (a *App) readMessages() {
 			continue
 		}
 
-		msg := Message{
+		msg := params.Message{
 			Hash:      hexutil.Encode(envelope.Hash()),
 			Content:   string(msgDecoded.Payload),
 			Name:      msgDecoded.Nick,
 			Timestamp: msgDecoded.Timestamp,
+		}
+		err = database.SaveMessage(a.sqlite, msg)
+		if err != nil {
+			fmt.Println("Error saving message", err)
 		}
 
 		fmt.Println("emit msg", msg)
