@@ -6,7 +6,8 @@ CREATE TABLE messages (
   timestamp integer not null,
   message_hash text not null,
   is_stored boolean not null default false
-);
+, waku_timestamp integer not null default 0);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
-  ('20240110063936');
+  ('20240110063936'),
+  ('20240110091221');

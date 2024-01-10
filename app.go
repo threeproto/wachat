@@ -26,6 +26,7 @@ import (
 	"github.com/waku-org/go-waku/waku/v2/protocol"
 	wpb "github.com/waku-org/go-waku/waku/v2/protocol/pb"
 	"github.com/waku-org/go-waku/waku/v2/protocol/relay"
+	"github.com/waku-org/go-waku/waku/v2/protocol/store"
 	wakuutils "github.com/waku-org/go-waku/waku/v2/utils"
 	"google.golang.org/protobuf/proto"
 )
@@ -124,6 +125,7 @@ func (a *App) startWaku(ctx context.Context) {
 
 	go a.readMessages()
 	go a.discoverNodes()
+	go a.checkMessages()
 }
 
 func (a *App) shutdown(ctx context.Context) {
@@ -132,8 +134,6 @@ func (a *App) shutdown(ctx context.Context) {
 
 // Greet returns a greeting for the given name
 func (a *App) Send(message string) (string, error) {
-	const version = 0
-
 	wakuPayload := new(payload.Payload)
 	pbMessage := &pb.Chat2Message{
 		Timestamp: uint64(a.node.Timesource().Now().Unix()),
@@ -147,7 +147,7 @@ func (a *App) Send(message string) (string, error) {
 	wakuPayload.Data = pbMsgBytes
 	wakuPayload.Key = &payload.KeyInfo{Kind: payload.None}
 
-	payloadBytes, err := wakuPayload.Encode(version)
+	payloadBytes, err := wakuPayload.Encode(utils.MessageVersion)
 	if err != nil {
 		log.Error("Error encoding the payload", err)
 		return "", err
@@ -155,7 +155,7 @@ func (a *App) Send(message string) (string, error) {
 
 	msg := &wpb.WakuMessage{
 		Payload:      payloadBytes,
-		Version:      proto.Uint32(version),
+		Version:      proto.Uint32(utils.MessageVersion),
 		ContentTopic: a.topic.String(),
 		Timestamp:    wakuutils.GetUnixEpoch(a.node.Timesource()),
 	}
@@ -169,8 +169,6 @@ func (a *App) Send(message string) (string, error) {
 	return hexutil.Encode(msgHash), nil
 }
 
-const testServer = "http://www.google.com"
-
 func (a *App) isNetworkOnline() bool {
 	// Set a timeout for the HTTP request
 	online := true
@@ -179,7 +177,7 @@ func (a *App) isNetworkOnline() bool {
 	}
 
 	// Attempt to perform a GET request to a known server
-	_, err := client.Get(testServer)
+	_, err := client.Get(utils.ConnectivityCheckServer)
 	if err != nil {
 		fmt.Println("Error:", err)
 		online = false
@@ -224,14 +222,16 @@ func (a *App) readMessages() {
 		}
 
 		msg := params.Message{
-			Hash:      hexutil.Encode(envelope.Hash()),
-			Content:   string(msgDecoded.Payload),
-			Name:      msgDecoded.Nick,
-			Timestamp: msgDecoded.Timestamp,
+			Hash:          hexutil.Encode(envelope.Hash()),
+			Content:       string(msgDecoded.Payload),
+			Name:          msgDecoded.Nick,
+			Timestamp:     msgDecoded.Timestamp,
+			WakuTimestamp: uint64(envelope.Message().GetTimestamp()),
 		}
 		err = database.SaveMessage(a.sqlite, msg)
 		if err != nil {
 			fmt.Println("Error saving message", err)
+			continue
 		}
 
 		fmt.Println("emit msg", msg)
@@ -264,6 +264,88 @@ func (a *App) discoverNodes() {
 		}(a.ctx, node.PeerInfo)
 	}
 	wg.Wait()
+}
+
+func (a *App) checkMessages() {
+	ticker := time.NewTicker(10 * time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-a.ctx.Done():
+			return
+		case <-ticker.C:
+			fmt.Println("Checking messages")
+			a.ensureMessageStored()
+		}
+	}
+}
+
+func (a *App) ensureMessageStored() {
+	messages, err := database.GetUnstoredMessages(a.sqlite)
+	if err != nil {
+		fmt.Println("Error getting unstored messages", err)
+		return
+	}
+
+	for _, msg := range messages {
+		fmt.Println("Retrieve unstored message", msg.Hash)
+		now := wakuutils.GetUnixEpoch(a.node.Timesource())
+		query := store.Query{
+			StartTime:     proto.Int64(int64(msg.Timestamp-86400) * int64(time.Second)),
+			EndTime:       proto.Int64(int64(*now) * int64(time.Second)),
+			ContentTopics: []string{a.topic.String()},
+			PubsubTopic:   relay.DefaultWakuTopic,
+		}
+		fn := func(wakuMsg *wpb.WakuMessage) (bool, error) {
+			wakuMsgHash := wakuMsg.Hash(relay.DefaultWakuTopic)
+
+			return msg.Hash == hexutil.Encode(wakuMsgHash), nil
+		}
+		found, err := a.node.Store().Find(a.ctx, query, fn)
+		if err != nil {
+			fmt.Println("Error searching for message", err)
+			continue
+		}
+
+		if found == nil {
+			fmt.Println("Message not found, republishing", msg.Hash)
+			wakuPayload := new(payload.Payload)
+			pbMessage := &pb.Chat2Message{
+				Timestamp: msg.Timestamp,
+				Nick:      msg.Name,
+				Payload:   []byte(msg.Content),
+			}
+			pbMsgBytes, err := proto.Marshal(pbMessage)
+			if err != nil {
+				continue
+			}
+			wakuPayload.Data = pbMsgBytes
+			wakuPayload.Key = &payload.KeyInfo{Kind: payload.None}
+
+			payloadBytes, err := wakuPayload.Encode(utils.MessageVersion)
+			if err != nil {
+				log.Error("Error encoding the payload", err)
+				continue
+			}
+			msg := &wpb.WakuMessage{
+				Payload:      payloadBytes,
+				Version:      proto.Uint32(utils.MessageVersion),
+				ContentTopic: a.topic.String(),
+				Timestamp:    proto.Int64(int64(msg.WakuTimestamp)),
+			}
+
+			_, err = a.node.Relay().Publish(a.ctx, msg, relay.WithDefaultPubsubTopic())
+			if err != nil {
+				log.Error("Error push a message", err)
+				continue
+			}
+
+			continue
+		}
+
+		fmt.Println("Message found, updating", msg.Hash)
+		database.UpdateStoredMessage(a.sqlite, msg.Hash)
+	}
 }
 
 func randomHex(n int) (string, error) {

@@ -6,7 +6,8 @@ export namespace params {
 	    content: string;
 	    name: string;
 	    timestamp: number;
-	    is_stored: boolean;
+	    isStored: boolean;
+	    wakuTimestamp: number;
 	
 	    static createFrom(source: any = {}) {
 	        return new Message(source);
@@ -19,7 +20,8 @@ export namespace params {
 	        this.content = source["content"];
 	        this.name = source["name"];
 	        this.timestamp = source["timestamp"];
-	        this.is_stored = source["is_stored"];
+	        this.isStored = source["isStored"];
+	        this.wakuTimestamp = source["wakuTimestamp"];
 	    }
 	}
 
