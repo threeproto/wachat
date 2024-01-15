@@ -9,3 +9,9 @@ type Message struct {
 	IsStored      bool   `json:"isStored" db:"is_stored"`
 	WakuTimestamp uint64 `json:"wakuTimestamp" db:"waku_timestamp"`
 }
+
+type User struct {
+	Id       int    `json:"id" db:"user_id"`
+	Name     string `json:"name" db:"name"`
+	Selected bool   `json:"selected" db:"selected"`
+}
