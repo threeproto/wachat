@@ -63,6 +63,12 @@ func (a *App) startup(ctx context.Context) {
 	}
 	a.sqlite = sqlDb
 
+	user, err := database.GetSelectedUser(a.sqlite)
+	if err != nil {
+		a.username = "Anonymous"
+	}
+	a.username = user.Name
+
 	a.isOnline = a.isNetworkOnline()
 	if a.isOnline {
 		a.startWaku(ctx)
@@ -187,6 +193,14 @@ func (a *App) isNetworkOnline() bool {
 }
 
 func (a *App) CreateUser(name string) error {
+	user := params.User{
+		Name:     name,
+		Selected: true,
+	}
+	err := database.SaveUser(a.sqlite, user)
+	if err != nil {
+		return err
+	}
 	a.username = name
 	return nil
 }
