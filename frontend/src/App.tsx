@@ -52,8 +52,12 @@ function App() {
   };
 
   const createUser = async () => {
-    await CreateUser(username);
+    try {
+      await CreateUser(username);
     toast("User has been created.");
+    } catch (err) {
+      toast.error(`Error happens: ${err}`);
+    }
   };
 
   const formatDate = (timestamp: number) => {

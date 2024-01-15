@@ -23,12 +23,19 @@ func SaveUser(db *sqlx.DB, user params.User) error {
 	if err != nil {
 		return err
 	}
+	defer tx.Rollback()
+
 	tx.Exec(`UPDATE users SET selected = false`)
 
-	_, err = db.Exec(
+	_, err = tx.Exec(
 		"insert into users (name, selected) values (?, ?)",
 		user.Name, user.Selected,
 	)
+	if err != nil {
+		return err
+	}
+
+	err = tx.Commit()
 	if err != nil {
 		return err
 	}

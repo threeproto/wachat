@@ -13,6 +13,7 @@ func DbMigrate() {
 	dbPath, err := utils.SQLiteDatabasePath()
 	if err != nil {
 		// utils.Sugar.Fatal(err)
+		fmt.Println(err)
 	}
 	u, _ := url.Parse("sqlite:" + dbPath)
 	db := dbmate.New(u)
@@ -22,6 +23,7 @@ func DbMigrate() {
 	migrations, err := db.FindMigrations()
 	if err != nil {
 		// utils.Sugar.Fatal(err)
+		fmt.Println(err)
 	}
 	for _, m := range migrations {
 		fmt.Printf("%s  %s", m.Version, m.FilePath)
@@ -32,5 +34,6 @@ func DbMigrate() {
 	err = db.CreateAndMigrate()
 	if err != nil {
 		// utils.Sugar.Fatal(err)
+		fmt.Println(err)
 	}
 }

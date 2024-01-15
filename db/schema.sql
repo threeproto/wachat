@@ -7,7 +7,13 @@ CREATE TABLE messages (
   message_hash text not null,
   is_stored boolean not null default false
 , waku_timestamp integer not null default 0);
+CREATE TABLE users (
+  user_id integer primary key,
+  name text not null,
+  selected boolean not null
+);
 -- Dbmate schema migrations
 INSERT INTO "schema_migrations" (version) VALUES
   ('20240110063936'),
-  ('20240110091221');
+  ('20240110091221'),
+  ('20240115032945');
