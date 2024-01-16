@@ -23,7 +23,7 @@ function App() {
   useEffect(() => {
     console.log("in init effect");
     EventsOn("newMessage", (msg: params.Message) => {
-      setMessages((prev) => [...prev, msg]);
+      setMessages((prev) => [msg, ...prev]);
     });
     EventsOn("isOnline", (isOnline: boolean) => {
       if (isOnline) {
@@ -94,7 +94,7 @@ function App() {
       )}
 
       {username && (
-        <div>
+        <div className="flex flex-col gap-10">
           <div className="flex w-full max-w-sm items-center space-x-2">
             <Input
               value={newMessage}
@@ -108,16 +108,18 @@ function App() {
             </Button>
           </div>
 
-          <h1 className="text-xl font-bold mb-2">Message History</h1>
-          <ScrollArea className="h-[300px] w-[550px] rounded-md border p-4 bg-gray-100">
-            <ul className="text-sm">
-              {messages.map((msg, index) => (
-                <li key={index} className="mb-1">
-                  [{formatDate(msg.timestamp)} {msg.name}] says: {msg.content}
-                </li>
-              ))}
-            </ul>
-          </ScrollArea>
+          <div>
+            <h1 className="text-xl font-bold mb-2">Message History</h1>
+            <ScrollArea className="h-[300px] w-[550px] rounded-md border p-4 bg-gray-100">
+              <ul className="text-sm">
+                {messages.map((msg, index) => (
+                  <li key={index} className="mb-1">
+                    [{formatDate(msg.timestamp)} {msg.name}] says: {msg.content}
+                  </li>
+                ))}
+              </ul>
+            </ScrollArea>
+          </div>
         </div>
       )}
     </div>
