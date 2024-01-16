@@ -64,10 +64,9 @@ func (a *App) startup(ctx context.Context) {
 	a.sqlite = sqlDb
 
 	user, err := database.GetSelectedUser(a.sqlite)
-	if err != nil {
-		a.username = "Anonymous"
+	if err == nil {
+		a.username = user.Name
 	}
-	a.username = user.Name
 
 	a.isOnline = a.isNetworkOnline()
 	if a.isOnline {
@@ -93,7 +92,7 @@ func (a *App) startup(ctx context.Context) {
 }
 
 func (a *App) startWaku(ctx context.Context) {
-	contentTopic, err := protocol.NewContentTopic("toy-chat", "2", "huilong", "proto")
+	contentTopic, err := protocol.NewContentTopic("toy-chat", "3", "mingde", "proto")
 	if err != nil {
 		fmt.Println("Invalid Content Topic")
 		panic(err)
@@ -192,17 +191,21 @@ func (a *App) isNetworkOnline() bool {
 	return online
 }
 
-func (a *App) CreateUser(name string) error {
+func (a *App) CreateUser(name string) (string, error) {
 	user := params.User{
 		Name:     name,
 		Selected: true,
 	}
 	err := database.SaveUser(a.sqlite, user)
 	if err != nil {
-		return err
+		return "", err
 	}
 	a.username = name
-	return nil
+	return name, nil
+}
+
+func (a *App) GetUser() string {
+	return a.username
 }
 
 func (a *App) GetMessages() []params.Message {
@@ -254,7 +257,7 @@ func (a *App) readMessages() {
 }
 
 func (a *App) discoverNodes() {
-	dnsDiscoveryUrl := "enrtree://ANEDLO25QVUGJOUTQFRYKWX6P4Z4GKVESBMHML7DZ6YK4LGS5FC5O@prod.wakuv2.nodes.status.im"
+	dnsDiscoveryUrl := "enrtree://AL65EKLJAUXKKPG43HVTML5EFFWEZ7L4LOKTLZCLJASG4DSESQZEC@prod.status.nodes.status.im"
 	nodes, err := dnsdisc.RetrieveNodes(a.ctx, dnsDiscoveryUrl)
 	if err != nil {
 		log.Error("Error retrieving nodes", err)
@@ -267,12 +270,12 @@ func (a *App) discoverNodes() {
 		go func(ctx context.Context, info peer.AddrInfo) {
 			defer wg.Done()
 
-			ctx, cancel := context.WithTimeout(ctx, time.Duration(10)*time.Second)
+			ctx, cancel := context.WithTimeout(ctx, time.Duration(30)*time.Second)
 			defer cancel()
 
 			err = a.node.DialPeerWithInfo(ctx, info)
 			if err != nil {
-				log.Error("Error dialing peer", err)
+				fmt.Println("Error dialing peer", err)
 				return
 			}
 		}(a.ctx, node.PeerInfo)

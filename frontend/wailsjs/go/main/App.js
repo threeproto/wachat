@@ -10,6 +10,10 @@ export function GetMessages() {
   return window['go']['main']['App']['GetMessages']();
 }
 
+export function GetUser() {
+  return window['go']['main']['App']['GetUser']();
+}
+
 export function Send(arg1) {
   return window['go']['main']['App']['Send'](arg1);
 }
