@@ -1,11 +1,28 @@
-# README
+# Wachat
 
-## About
+## Install
 
-This is the official Wails React-TS template.
+Download the latest release from the [releases page](https://github.com/threeproto/wachat/releases)
 
-You can configure the project by editing `wails.json`. More information about the project settings can be found
-here: https://wails.io/docs/reference/project-config
+### Linux
+
+1. download the binary `wachat-linux`
+2. make it executable with command, `chmod +x wachat-linux`
+3. now you can open and use the `wachat-linux` app.
+
+### Mac
+
+1. download and unzip the binary `wachat-darwin.app.zip`, and you should get a `wachat` app.
+2. move `wachat` app to the Applications folder.
+3. open Applications folder, find `wachat` app, right click and select `Open` to open it.
+
+### Windows
+
+_Note_: build is broken for windows.
+
+1. download the binary `wachat-windows.exe`.
+2. double click the `wachat-windows.exe` to open it and click `Yes` if asking for permission.
+
 
 ## Live Development
 
