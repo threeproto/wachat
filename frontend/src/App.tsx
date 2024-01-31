@@ -78,6 +78,10 @@ function App() {
     <div className="flex flex-col gap-10 items-center justify-center h-screen">
       <img height={100} width={100} src={logo} alt="logo" />
 
+      <div className="absolute right-16 top-6 flex flex-row gap-2 items-center">
+        <Label className="">Hello, {username}</Label>
+      </div>
+
       {!username && (
         <div className="flex w-full max-w-sm items-center space-x-2">
           <Input
@@ -94,7 +98,7 @@ function App() {
       )}
 
       {username && (
-        <div className="flex flex-col gap-10">
+        <div className="flex flex-col gap-10 items-center">
           <div className="flex w-full max-w-sm items-center space-x-2">
             <Input
               value={newMessage}
